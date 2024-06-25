@@ -39,31 +39,23 @@ class DelayModel:
             pd.DataFrame: features.
         """
 
-        # one-hot:
-        MES_one_hot = pd.get_dummies(data["MES"], prefix="MES")
-        OPERA_one_hot = pd.get_dummies(data["OPERA"], prefix="OPERA")
+        top_features = {
+            "OPERA_Latin American Wings": ('OPERA', 'Latin American Wings'),
+            "MES_7": ('MES', 7),
+            "MES_10": ('MES', 10),
+            "OPERA_Grupo LATAM": ('OPERA', 'Grupo LATAM'),
+            "MES_12": ('MES', 12),
+            "TIPOVUELO_I": ('TIPOVUELO', 'I'),
+            "MES_4": ('MES', 4),
+            "MES_11": ('MES', 11),
+            "OPERA_Sky Airline": ('OPERA', 'Sky Airline'),
+            "OPERA_Copa Air": ('OPERA', 'Copa Air'),
+        }
 
-        # binary
-        TIPOVUELO_binary = pd.get_dummies(data["TIPOVUELO"], prefix="TIPOVUELO")[
-            "TIPOVUELO_I"
-        ]
+        features = pd.DataFrame()
 
-        features = pd.concat([OPERA_one_hot, TIPOVUELO_binary, MES_one_hot], axis=1)
-
-        top_features = [
-            "OPERA_Latin American Wings",
-            "MES_7",
-            "MES_10",
-            "OPERA_Grupo LATAM",
-            "MES_12",
-            "TIPOVUELO_I",
-            "MES_4",
-            "MES_11",
-            "OPERA_Sky Airline",
-            "OPERA_Copa Air",
-        ]
-
-        features = features[top_features]
+        for feature_name, name_value_pair in top_features.items():
+            features[feature_name] = data[name_value_pair[0]]==name_value_pair[1]
 
         if target_column is not None:
             data["min_diff"] = data.apply(get_min_diff, axis=1)
