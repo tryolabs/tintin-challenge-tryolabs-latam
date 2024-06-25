@@ -18,13 +18,10 @@ def get_min_diff(data):
 
 class DelayModel:
     def __init__(self):
-        scale = 4.87164332519594
         self.models_folder = "./trained_models"
 
         # Model should be saved in this attribute.
-        self._model = xgb.XGBClassifier(
-            random_state=1, learning_rate=0.01, scale_pos_weight=scale
-        )
+        self._model = None
 
     def preprocess(
         self, data: pd.DataFrame, target_column: str = None
@@ -89,6 +86,14 @@ class DelayModel:
             target (pd.DataFrame): target.
         """
 
+        n_y0 = int((target == 0).sum())
+        n_y1 = int((target == 1).sum())
+        scale = n_y0 / n_y1
+
+        self._model = xgb.XGBClassifier(
+            random_state=1, learning_rate=0.01, scale_pos_weight=scale
+        )
+
         self._model.fit(features, target)
 
         os.makedirs(self.models_folder, exist_ok=True)
@@ -123,7 +128,7 @@ class DelayModel:
         """
         try:
             return self._model.predict(features).tolist()
-        except NotFittedError:
+        except (NotFittedError, AttributeError) as e:
             self._model = pickle.load(
                 open(os.path.join(self.models_folder, "latest.pkl"), "rb")
             )
