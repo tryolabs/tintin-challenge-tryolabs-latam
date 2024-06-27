@@ -44,13 +44,24 @@ To deploy our API to GCP, I had to:
 1. Install Google SDK
 1. Authentify my Google account
 1. Configure docker to use gcloud (with `gcloud auth configure-docker`)
-1. Created a project in GCP, which was called `acastro-tryolabs-latam`
-1. Built the docker `docker build -t gcr.io/acastro-tryolabs-latam/flight-predictor . --platform linux/amd64`. The flag `--platform linux/amd64` is there because an error I had when deploying it later, which seems to be a common problem with M1 chips like the one I'm using. The actual error was ` Application failed to start: failed to load /bin/sh: exec format error`, and that flag seems to fix the issue. In the command line to build the docker, you can see that my application was named `flight-predictor`.
+1. Create a project in GCP, which was called `acastro-tryolabs-latam`
+1. Build the docker `docker build -t gcr.io/acastro-tryolabs-latam/flight-predictor . --platform linux/amd64`. The flag `--platform linux/amd64` is there because an error I had when deploying it later, which seems to be a common problem with M1 chips like the one I'm using. The actual error was ` Application failed to start: failed to load /bin/sh: exec format error`, and that flag seems to fix the issue. In the command line to build the docker, you can see that my application was named `flight-predictor`.
 1. Push the docker image to gcr, with `docker push gcr.io/acastro-tryolabs-latam/flight-predictor` 
 1. Deploy with gcloud: `gcloud run deploy flight-predictor-api --image gcr.io/acastro-tryolabs-latam/flight-predictor --platform managed --region us-central1` 
+1. Replace the API's URL (which is `https://flight-predictor-api-emdlm4e4fa-uc.a.run.app/predict`) in the makefile.
 
 Here I needed to change the version of locust in the `requirements-test.txt`, since I needed to use a more recent version of Flask to avoid a couple problems with imports (`cannot import name 'escape' from 'jinja2'` and `cannot import name 'json' from 'itsdangerous'`). This error only ocurred when running the test for this part, but it was solved using a more recent version of locust.
 
-## Part 4: CI & CD
+Apart from the tests, I also tested the application by running the command line
 
+```bash
+curl -X POST "https://flight-predictor-api-emdlm4e4fa-uc.a.run.app/predict" \  -H "Content-Type: application/json" \  -d '{"flights": [{"OPERA": "Grupo LATAM", "TIPOVUELO": "N", "MES": 3}]}'
+```
+
+and it returned the prediction
+```bash
+{"predict":[0]}
+```
+
+## Part 4: CI & CD
 
