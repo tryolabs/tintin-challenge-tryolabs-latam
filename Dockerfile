@@ -1,21 +1,23 @@
 # syntax=docker/dockerfile:1.2
-FROM python:latest
-# put you docker configuration here
+FROM python:3.9-slim
 
-# Use an official Python runtime as a parent image
-FROM python:3.12.4
-
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y build-essential gcc libssl-dev
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy requirements files for the container
+COPY requirements.txt .
+COPY requirements-dev.txt .
+COPY requirements-test.txt .
 
-# Make port 8012 available to the world outside this container
-EXPOSE 8080
+# Copy the entire project into the container
+COPY . .
 
-# Run app.py when the container launches
-CMD ["uvicorn", "challenge.api:app", "--host", "0.0.0.0", "--port", "8080"]
+# Install Python dependencies
+RUN pip install -r requirements.txt -r requirements-dev.txt -r requirements-test.txt
+
+# Run the application inside the container
+CMD uvicorn challenge.api:app --host 0.0.0.0 --port $PORT
