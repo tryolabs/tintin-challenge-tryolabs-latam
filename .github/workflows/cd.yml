@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      - develop
+      - release/*
 
 jobs:
   deploy:
@@ -40,11 +42,27 @@ jobs:
         docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/flight-predictor . --platform linux/amd64
         docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/flight-predictor
 
-    - name: Deploy to Cloud Run
-      id: deploy
+    - name: Deploy to Cloud Run (Main)
+      if: github.ref == 'refs/heads/main'
       run: |
-        echo "Deploying to Google Cloud Run..."
-        URL=$(gcloud run deploy flight-predictor-api --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/flight-predictor --platform managed --region us-central1 --allow-unauthenticated --format="value(status.url)")
+        echo "Deploying Main API to Google Cloud Run..."
+        URL=$(gcloud run deploy main-api --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/flight-predictor --platform managed --region us-central1 --allow-unauthenticated --format="value(status.url)")
+        echo "::set-output name=url::$URL"
+        echo "Deployment completed at $URL"
+
+    - name: Deploy to Cloud Run (Develop)
+      if: github.ref == 'refs/heads/develop'
+      run: |
+        echo "Deploying Develop API to Google Cloud Run..."
+        URL=$(gcloud run deploy develop-api --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/flight-predictor --platform managed --region us-central1 --allow-unauthenticated --format="value(status.url)")
+        echo "::set-output name=url::$URL"
+        echo "Deployment completed at $URL"
+
+    - name: Deploy to Cloud Run (Release)
+      if: contains(github.ref, 'refs/heads/release/')
+      run: |
+        echo "Deploying Release API to Google Cloud Run..."
+        URL=$(gcloud run deploy release-api --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/flight-predictor --platform managed --region us-central1 --allow-unauthenticated --format="value(status.url)")
         echo "::set-output name=url::$URL"
         echo "Deployment completed at $URL"
 
