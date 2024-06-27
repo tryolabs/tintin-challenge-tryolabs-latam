@@ -2,6 +2,10 @@
 
 ## Part 1: Model implementation
 
+I decided to use the feature selection (reducing input dimensionality) and balance because it returned better metrics for both the XGBoost and the Logistic Regression. 
+
+When making a decision on wether to use XGBoost or Logistic Regression, I decided to use the XGBoost since it can deal with more complex relations between the features to predict the target. However, we saw that both models returned similar metrics, and Logistic Regression is faster (since it is a simpler model), so one could argue in favor of using Logistic Regression if the inference time was a constraint that we worried about.
+
 ### Changes in exploration notebook
 
 - Given a column in the features, the *delay rate* for each value taken by the column is computed as the percentage of delayed flights in that category. [Associated commit](https://github.com/tryolabs/tintin-challenge-tryolabs-latam/commit/bed404d0071cc95a545f29b47477f36a596a314f).
@@ -64,4 +68,59 @@ and it returned the prediction
 ```
 
 ## Part 4: CI & CD
+
+In my `cd.yml`, I made use of a couple secret variables, indicating the name of the project (`GCP_PROJECT_ID`) and for my key for my Service Account (`GCP_SA_KEY`). To create the key to my service account, I followed the following steps:
+
+**Navigate to the Service Accounts Page:**
+1. Go to the Google Cloud Console.
+1. Navigate to "IAM & Admin" > "Service Accounts".
+1. Find the existing service account you want to use.
+
+**Create a New Key:**
+1. Click on the service account to view its details.
+1. Go to the "KEYS" tab.
+1. Click on “ADD KEY” and select “Create new key”.
+After these steps, a json file containing my GCP_SA_KEY  was downloaded.
+
+Then I added the secret variables to my github repository, I followed the following steps:
+1. Go to my repository on GitHub.
+1. Click on Settings.
+1. Under "Security", click on Secrets & Policies.
+1. Click on Actions under "Secrets".
+1. Click on "New repository secret".
+1. Enter the name (`GCP_PROJECT_ID` or `GCP_SA_KEY`) and their value.
+1. Click Add secret.
+
+My continuous integration workflow did the model-test and api-test, while the continuous deployment workflow was concerned about the stress-test.
+
+After seeing that my continuous integration workflow passed the tests (model-test and api-test), I decided to merge my changes, but after that I noticed a few problems with my continuous deployment workflow. 
+
+I had an error during the Run docker build  of the cd.yml, saying `'Unauthenticated request. Unauthenticated requests do not have permission "artifactregistry.repositories.uploadArtifacts" on resource "projects/***/locations/us/repositories/gcr.io" (or it may not exist)'`. To solve this, since I wasn't sure of the main cause of the problem, I did two things:
+- Ensured that my GitHub Actions workflow is correctly configured to authenticate with Google Cloud using the service account key. For that, I added in the cd.yml the step `run: gcloud auth configure-docker`
+- Made sure the service account associated with the `GCP_SA_KEY` has the necessary permissions. For operations with Google Container Registry, the service account should have the Storage Admin role. To add that role, I followed these steps:
+1. Navigate to "IAM & Admin" > "IAM".
+1. Find the service account.
+1. Click "edit" (pencil icon) to modify its roles.
+1. Add the "Storage Admin" role.
+
+Another error I had with my `cd.yml` was that I forgot to install the dependencies (the error said something along the lines of locust: not found). Therefore, I added an step that installs the dependencies in `requirements-test.txt`  (which contains locust).
+
+Finally, the last problem I had was that I needed a trained model that my deployed API was going to use. Therefore, before building the docker container, I added a training step, and I also installed the remaining dependencies that I needed to train my model: 
+
+```
+- name: Install dependencies
+  run: |
+    pip install -r requirements.txt -r requirements-dev.txt -r requirements-test.txt
+
+- name: Train Model
+  run: |
+    export PYTHONPATH=$PYTHONPATH:$(pwd)
+    python3 ./challenge/train.py
+```
+
+The training script `./challenge/train.py` used all the data we have for training, and didn't do any splitting between training and test set, since I wasn't concerned about the metrics it returned for the purpose of this challenge.
+
+**REMARKS**:
+- There are better ways of dealing with this last problem. Instead of training inside the `cd.yml`, we could have a model registry (using for example, MLflow), and then deploying our API with a model we have available in our model registry. 
+- Even though some variables like the project name and the key for my Service Account are treated as secret variables in the repository, I am aware that some variables are still hardcoded (and even the project name which is 'secret', is explicitly mentioned a few times in this markdown documentation just to simplify the exposition). One hardcoded variable is for example `STRESS_URL` in the Makefile, which shouldn't be harcoded. However, I still added a few steps in the `cd.yml` to get the URL to my API when it deploys with gcloud, and uses that URL to run the stress-test.
 
