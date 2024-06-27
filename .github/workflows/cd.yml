@@ -16,6 +16,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
+    - name: Install dependencies for testing
+      run: |
+        pip install -r requirements-test.txt
+
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v0.2.0
       with:
