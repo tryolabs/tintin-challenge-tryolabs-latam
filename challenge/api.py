@@ -93,6 +93,3 @@ async def post_predict(input: PredictionInput) -> dict:
         print(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8012)
