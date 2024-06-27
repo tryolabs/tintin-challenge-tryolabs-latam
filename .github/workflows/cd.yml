@@ -43,6 +43,7 @@ jobs:
         docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/flight-predictor
 
     - name: Deploy to Cloud Run (Main)
+      id: deploy-main
       if: github.ref == 'refs/heads/main'
       run: |
         echo "Deploying Main API to Google Cloud Run..."
@@ -51,6 +52,7 @@ jobs:
         echo "Deployment completed at $URL"
 
     - name: Deploy to Cloud Run (Develop)
+      id: deploy-develop
       if: github.ref == 'refs/heads/develop'
       run: |
         echo "Deploying Develop API to Google Cloud Run..."
@@ -59,6 +61,7 @@ jobs:
         echo "Deployment completed at $URL"
 
     - name: Deploy to Cloud Run (Release)
+      id: deploy-release
       if: contains(github.ref, 'refs/heads/release/')
       run: |
         echo "Deploying Release API to Google Cloud Run..."
@@ -67,7 +70,14 @@ jobs:
         echo "Deployment completed at $URL"
 
     - name: Set STRESS_URL for Makefile
-      run: echo "STRESS_URL=${{ steps.deploy.outputs.url }}" >> $GITHUB_ENV
+      run: |
+        if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          echo "STRESS_URL=${{ steps.deploy-main.outputs.url }}" >> $GITHUB_ENV
+        elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+          echo "STRESS_URL=${{ steps.deploy-develop.outputs.url }}" >> $GITHUB_ENV
+        elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+          echo "STRESS_URL=${{ steps.deploy-release.outputs.url }}" >> $GITHUB_ENV
+        fi
 
     - name: Run stress tests
       run: |
