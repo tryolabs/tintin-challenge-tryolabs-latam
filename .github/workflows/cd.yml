@@ -22,7 +22,9 @@ jobs:
         pip install -r requirements.txt -r requirements-dev.txt -r requirements-test.txt
 
     - name: Train Model
-      run: python3 ./challenge/train.py
+      run: |
+        export PYTHONPATH=$PYTHONPATH:$(pwd)
+        python3 ./challenge/train.py
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v0.2.0
