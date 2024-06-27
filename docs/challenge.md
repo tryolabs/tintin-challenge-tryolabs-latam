@@ -55,7 +55,7 @@ Here I needed to change the version of locust in the `requirements-test.txt`, si
 Apart from the tests, I also tested the application by running the command line
 
 ```bash
-curl -X POST "https://flight-predictor-api-emdlm4e4fa-uc.a.run.app/predict" \  -H "Content-Type: application/json" \  -d '{"flights": [{"OPERA": "Grupo LATAM", "TIPOVUELO": "N", "MES": 3}]}'
+curl -X POST "https://flight-predictor-api-emdlm4e4fa-uc.a.run.app/predict"  -H "Content-Type: application/json" -d '{"flights": [{"OPERA": "Grupo LATAM", "TIPOVUELO": "N", "MES": 3}]}'
 ```
 
 and it returned the prediction
